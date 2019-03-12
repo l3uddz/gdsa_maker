@@ -37,24 +37,55 @@ class Google:
             self._token_saver(token)
         return self.token
 
-    def query(self, path, method='GET', **kwargs):
+    def query(self, path, method='GET', page_type='changes', fetch_all_pages=False, **kwargs):
         resp_json = {}
+        pages = 1
         resp = None
         request_url = self.api_url + path.lstrip('/') if not path.startswith('http') else path
 
         try:
-            resp = self._do_query(request_url, method, **kwargs)
-            logger.debug(f"Request URL: {resp.url}")
-            logger.debug(f"Request ARG: {kwargs}")
-            logger.debug(f'Response Status: {resp.status_code} {resp.reason}')
+            while True:
+                resp = self._do_query(request_url, method, **kwargs)
+                logger.debug(f"Request URL: {resp.url}")
+                logger.debug(f"Request ARG: {kwargs}")
+                logger.debug(f'Response Status: {resp.status_code} {resp.reason}')
 
-            if resp.status_code == 200 and 'Content-Type' in resp.headers and 'json' in resp.headers['Content-Type']:
-                resp_json = resp.json()
-                logger.trace(f"Response JSON:\n{json.dumps(resp_json, indent=2)}\n")
-                return True, resp, resp_json
-            else:
-                logger.trace(f"Response TEXT:\n{resp.text}\n")
-                return False if resp.status_code != 200 else True, resp, resp.text
+                if 'Content-Type' in resp.headers and 'json' in resp.headers['Content-Type']:
+                    if fetch_all_pages:
+                        resp_json.pop('nextPageToken', None)
+                    new_json = resp.json()
+                    # does this page have changes
+                    extended_pages = False
+                    page_data = []
+                    if page_type in new_json:
+                        if page_type in resp_json:
+                            page_data.extend(resp_json[page_type])
+                        page_data.extend(new_json[page_type])
+                        extended_pages = True
+
+                    resp_json.update(new_json)
+                    if extended_pages:
+                        resp_json[page_type] = page_data
+                else:
+                    return False if resp.status_code != 200 else True, resp, resp.text
+
+                # handle nextPageToken
+                if fetch_all_pages and 'nextPageToken' in resp_json and resp_json['nextPageToken']:
+                    # there are more pages
+                    pages += 1
+                    logger.info(f"Fetching extra results from page {pages}")
+                    if 'params' in kwargs:
+                        kwargs['params'].update({'pageToken': resp_json['nextPageToken']})
+                    elif 'json' in kwargs:
+                        kwargs['json'].update({'pageToken': resp_json['nextPageToken']})
+                    elif 'data' in kwargs:
+                        kwargs['data'].update({'pageToken': resp_json['nextPageToken']})
+                    continue
+
+                break
+
+            return True if resp_json and len(resp_json) else False, resp, resp_json if (
+                    resp_json and len(resp_json)) else resp.text
 
         except Exception:
             logger.exception(f"Exception sending request to {request_url} with kwargs={kwargs}: ")
@@ -65,11 +96,13 @@ class Google:
     ############################################################
 
     def get_service_accounts(self):
-        success, resp, resp_data = self.query(f'projects/{self.project_name}/serviceAccounts')
+        success, resp, resp_data = self.query(f'projects/{self.project_name}/serviceAccounts', fetch_all_pages=True,
+                                              page_type='accounts', params={'pageSize': 100})
         return success, resp_data
 
     def get_service_account_keys(self, service_account):
-        success, resp, resp_data = self.query(f'projects/{self.project_name}/serviceAccounts/{service_account}/keys')
+        success, resp, resp_data = self.query(f'projects/{self.project_name}/serviceAccounts/{service_account}/keys',
+                                              fetch_all_pages=True, page_type='keys', params={'pageSie': 100})
         return success, resp_data
 
     def create_service_account(self, name):
@@ -87,7 +120,8 @@ class Google:
         return success, resp_data
 
     def get_teamdrives(self):
-        success, resp, resp_data = self.query(f'https://www.googleapis.com/drive/v3/teamdrives')
+        success, resp, resp_data = self.query('https://www.googleapis.com/drive/v3/teamdrives',
+                                              params={'pageSize': 100}, fetch_all_pages=True, page_type='teamDrives')
         return success, resp_data
 
     def create_teamdrive(self, name):
