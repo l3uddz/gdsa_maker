@@ -129,6 +129,14 @@ class Google:
                                               params={'requestId': name}, json={'name': name})
         return success, resp_data
 
+    def get_teamdrive_permissions(self, teamdrive_id):
+        success, resp, resp_data = self.query(f'https://www.googleapis.com/drive/v3/files/{teamdrive_id}/permissions',
+                                              params={'pageSize': 100,
+                                                      'fields': 'permissions(deleted,domain,emailAddress,id,type)',
+                                                      'supportsTeamDrives': True},
+                                              fetch_all_pages=True, page_type='permissions')
+        return success, resp_data
+
     def set_teamdrive_share_user(self, teamdrive_id, user):
         success, resp, resp_data = self.query(f'https://www.googleapis.com/drive/v3/files/{teamdrive_id}/permissions',
                                               'POST', params={'supportsTeamDrives': True},
@@ -137,6 +145,12 @@ class Google:
                                                     'emailAddress': user
                                                     })
         return success, resp_data
+
+    def delete_teamdrive_share_user(self, teamdrive_id, permission_id):
+        success, resp, resp_data = self.query(
+            f'https://www.googleapis.com/drive/v3/files/{teamdrive_id}/permissions/{permission_id}',
+            'DELETE', params={'supportsTeamDrives': True})
+        return True if resp.status_code == 204 else False, resp_data
 
     ############################################################
     # INTERNALS

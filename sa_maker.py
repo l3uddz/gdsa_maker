@@ -2,6 +2,7 @@
 import json
 import os
 import sys
+from copy import copy
 
 import click
 from loguru import logger
@@ -243,6 +244,105 @@ def set_teamdrive_users(name, key_prefix):
             logger.info(f"Shared access to {name!r} teamdrive for user: {service_key_user}")
         else:
             logger.error(f"Failed sharing access to {name!r} teamdrive for user {service_key_user!r}:\n{resp}")
+            sys.exit(1)
+    sys.exit(0)
+
+
+@app.command(help='Lists users for a teamdrive')
+@click.option('--name', '-n', required=True, help='Name of the teamdrive')
+def list_teamdrive_users(name):
+    global google, cfg
+
+    # retrieve the teamdrive id
+    success, teamdrives = google.get_teamdrives()
+    if not success:
+        logger.error(f"Unable to retrieve existing teamdrives:\n{teamdrives}")
+        sys.exit(1)
+
+    teamdrive_id = misc.get_teamdrive_id(teamdrives, name)
+    if not teamdrive_id:
+        logger.error(f"Failed to determine teamdrive_id of teamdrive with name {name!r}")
+        sys.exit(1)
+
+    # get permissions (users) on the teamdrive
+    success, teamdrive_permissions = google.get_teamdrive_permissions(teamdrive_id)
+    if not success:
+        logger.error(f"Unable to retrieve existing permissions on teamdrive {name!r}:\n{teamdrive_permissions}")
+        sys.exit(1)
+    elif 'permissions' not in teamdrive_permissions:
+        logger.error(
+            f"Unexpected response when retrieving existing permission(s) on teamdrive {name!r}:\n"
+            f"{teamdrive_permissions}")
+        sys.exit(1)
+
+    # remove permissions that are already deleted
+    for permission in copy(teamdrive_permissions['permissions']):
+        if permission['deleted']:
+            # this permission is already deleted, lets remove it
+            teamdrive_permissions['permissions'].remove(permission)
+
+    logger.info(f"Existing users on teamdrive {name!r}:\n{json.dumps(teamdrive_permissions, indent=2)}")
+    sys.exit(0)
+
+
+@app.command(help='Remove users from a teamdrive')
+@click.option('--name', '-n', required=True, help='Name of the teamdrive')
+@click.option('--email', '-e', required=False, default='ALL', show_default=True, help='Email of user to remove')
+@click.option('--keep-emails', '-k', required=False, multiple=True, help='Email of users to keep')
+def remove_teamdrive_users(name, email, keep_emails):
+    global google, cfg
+
+    if email == 'ALL' and not len(keep_emails):
+        logger.error(f"You must specify an email to keep when removing access to all users (your teamdrive owner)")
+        sys.exit(1)
+
+    # retrieve the teamdrive id
+    success, teamdrives = google.get_teamdrives()
+    if not success:
+        logger.error(f"Unable to retrieve existing teamdrives:\n{teamdrives}")
+        sys.exit(1)
+
+    teamdrive_id = misc.get_teamdrive_id(teamdrives, name)
+    if not teamdrive_id:
+        logger.error(f"Failed to determine teamdrive_id of teamdrive with name {name!r}")
+        sys.exit(1)
+
+    # get permissions (users) on the teamdrive
+    success, teamdrive_permissions = google.get_teamdrive_permissions(teamdrive_id)
+    if not success:
+        logger.error(f"Unable to retrieve existing permissions on teamdrive {name!r}:\n{teamdrive_permissions}")
+        sys.exit(1)
+    elif 'permissions' not in teamdrive_permissions:
+        logger.error(
+            f"Unexpected response when retrieving existing permission(s) on teamdrive {name!r}:\n"
+            f"{teamdrive_permissions}")
+        sys.exit(1)
+
+    # remove permissions that are already deleted
+    for permission in copy(teamdrive_permissions['permissions']):
+        if permission['deleted']:
+            # this permission is already deleted, lets remove it
+            teamdrive_permissions['permissions'].remove(permission)
+
+    logger.info(f"Found {len(teamdrive_permissions['permissions'])} permissions for teamdrive {name!r}")
+
+    # loop emails removing their access
+    for permission in teamdrive_permissions['permissions']:
+        # only go further (remove a user) if email was not supplied, or this permission email matches
+        if email != 'ALL' and permission['emailAddress'].lower() != email.lower():
+            continue
+
+        # is this a safe email?
+        if misc.is_safe_email(keep_emails, permission['emailAddress']):
+            logger.info(f"Keeping permissions on teamdrive {name!r} for: {permission['emailAddress']}")
+            continue
+
+        success, resp = google.delete_teamdrive_share_user(teamdrive_id, permission['id'])
+        if success:
+            logger.info(f"Removed permissions on teamdrive {name!r} for: {permission['emailAddress']}")
+        else:
+            logger.error(f"Unexpected response when removing permissions on teamdrive {name!r} for "
+                         f"{permission['emailAddress']!r}:\n{resp}")
             sys.exit(1)
     sys.exit(0)
 

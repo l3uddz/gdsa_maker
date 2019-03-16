@@ -66,3 +66,10 @@ def get_teamdrive_id(teamdrives, teamdrive_name):
     except Exception:
         logger.exception(f"Exception retrieving teamdrive_id for teamdrive_name {teamdrive_name}: ")
     return None
+
+
+def is_safe_email(safe_emails, check_email):
+    for safe_email in safe_emails:
+        if check_email.lower() == safe_email.lower():
+            return True
+    return False
