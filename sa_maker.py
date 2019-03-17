@@ -289,10 +289,12 @@ def list_teamdrive_users(name):
 @click.option('--name', '-n', required=True, help='Name of the teamdrive')
 @click.option('--email', '-e', required=False, default='ALL', show_default=True, help='Email of user to remove')
 @click.option('--keep-emails', '-k', required=False, multiple=True, help='Email of users to keep')
-def remove_teamdrive_users(name, email, keep_emails):
+@click.option('--service-accounts-only', '-sao', is_flag=True, required=False, default=False, show_default=True,
+              help='Only remove service accounts')
+def remove_teamdrive_users(name, email, keep_emails, service_accounts_only):
     global google, cfg
 
-    if email == 'ALL' and not len(keep_emails):
+    if email == 'ALL' and (not len(keep_emails) and not service_accounts_only):
         logger.error(f"You must specify an email to keep when removing access to all users (your teamdrive owner)")
         sys.exit(1)
 
@@ -330,6 +332,10 @@ def remove_teamdrive_users(name, email, keep_emails):
     for permission in teamdrive_permissions['permissions']:
         # only go further (remove a user) if email was not supplied, or this permission email matches
         if email != 'ALL' and permission['emailAddress'].lower() != email.lower():
+            continue
+
+        # is this in service accounts only mode
+        if service_accounts_only and not permission['emailAddress'].lower().endswith('.iam.gserviceaccount.com'):
             continue
 
         # is this a safe email?
