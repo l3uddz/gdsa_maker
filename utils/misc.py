@@ -68,6 +68,22 @@ def get_teamdrive_id(teamdrives, teamdrive_name):
     return None
 
 
+def get_group_id(groups, group_name, group_email):
+    try:
+        if 'groups' not in groups:
+            return None
+
+        for group in groups['groups']:
+            if group['name'].lower() == group_name.lower() and group['email'].lower() == group_email.lower():
+                logger.trace(f"Found group_id {group['id']!r} for group_name {group_name!r}")
+                return group['id']
+        logger.error(f"Failed to find group_id with name {group_name!r}")
+        return None
+    except Exception:
+        logger.exception(f"Exception retrieving group_id for group_name {group_name}: ")
+    return None
+
+
 def is_safe_email(safe_emails, check_email):
     for safe_email in safe_emails:
         if check_email.lower() == safe_email.lower():

@@ -12,7 +12,8 @@ class Google:
     token_url = 'https://www.googleapis.com/oauth2/v4/token'
     api_url = 'https://iam.googleapis.com/v1/'
     redirect_url = 'urn:ietf:wg:oauth:2.0:oob'
-    scopes = ['https://www.googleapis.com/auth/cloud-platform', 'https://www.googleapis.com/auth/drive']
+    scopes = ['https://www.googleapis.com/auth/cloud-platform', 'https://www.googleapis.com/auth/drive',
+              'https://www.googleapis.com/auth/admin.directory.group']
 
     def __init__(self, client_id, client_secret, project_name, token_path):
         self.client_id = client_id
@@ -94,6 +95,26 @@ class Google:
     ############################################################
     # GOOGLE METHODS
     ############################################################
+
+    def get_groups(self):
+        success, resp, resp_data = self.query(f'https://www.googleapis.com/admin/directory/v1/groups', params={
+            'customer': 'my_customer',
+            'maxResults': 200
+        }, fetch_all_pages=True, page_type='groups')
+        return True if resp.status_code == 200 else False, resp_data
+
+    def create_group(self, name, domain):
+        success, resp, resp_data = self.query(f'https://www.googleapis.com/admin/directory/v1/groups', 'POST', json={
+            'name': name,
+            'email': f'{name}@{domain}'
+        })
+        logger.info(resp.status_code)
+        return True if resp.status_code == 200 else False, resp_data
+
+    def delete_group(self, group_id):
+        success, resp, resp_data = self.query(f'https://www.googleapis.com/admin/directory/v1/groups/{group_id}',
+                                              'DELETE')
+        return True if resp.status_code == 204 else False, resp_data
 
     def get_service_accounts(self):
         success, resp, resp_data = self.query(f'projects/{self.project_name}/serviceAccounts', fetch_all_pages=True,

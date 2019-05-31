@@ -116,6 +116,67 @@ def authorize():
     sys.exit(0)
 
 
+@app.command(help='Retrieve existing groups')
+def list_groups():
+    global google, cfg
+
+    # retrieve groups
+    logger.info("Retrieving existing groups...")
+    success, groups = google.get_groups()
+    if success:
+        logger.info(f"Existing groups:\n{json.dumps(groups, indent=2)}")
+        sys.exit(0)
+    else:
+        logger.error(f"Failed to retrieve groups:\n{groups}")
+        sys.exit(1)
+
+
+@app.command(help='Create group')
+@click.option('--name', '-n', required=True, help='Name of the group')
+@click.option('--domain', '-d', required=True, help='Domain of the G Suite account')
+def create_group(name, domain):
+    global google, cfg
+
+    # create group
+    logger.info(f"Creating group named: {name} - {name}@{domain}")
+
+    success, group = google.create_group(name, domain)
+    if success:
+        logger.info(f"Created group {name!r}:\n{group}")
+        sys.exit(0)
+    else:
+        logger.error(f"Failed to create group {name!r}:\n{group}")
+        sys.exit(1)
+
+
+@app.command(help='Remove a group')
+@click.option('--name', '-n', required=True, help='Name of the group')
+@click.option('--domain', '-d', required=True, help='Domain of the G Suite account')
+def remove_group(name, domain):
+    global google, cfg
+
+    # retrieve group id
+    success, groups = google.get_groups()
+    if not success:
+        logger.error(f"Unable to retrieve existing groups:\n{groups}")
+        sys.exit(1)
+
+    group_id = misc.get_group_id(groups, name, f'{name}@{domain}')
+    if not group_id:
+        logger.error(f"Failed to determine group_id of group with name {name!r}")
+        sys.exit(1)
+
+    # remove group
+    logger.info(f"Removing group: {name} - {name}@{domain}")
+    success, resp = google.delete_group(group_id)
+    if success:
+        logger.info(f"Deleted group!")
+        sys.exit(0)
+    else:
+        logger.error(f"Failed removing group {name!r} - {name}@{domain}:\n{resp}")
+        sys.exit(1)
+
+
 @app.command(help='Retrieve existing service accounts')
 def list_accounts():
     global google, cfg
