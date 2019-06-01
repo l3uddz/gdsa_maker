@@ -177,6 +177,91 @@ def remove_group(name, domain):
         sys.exit(1)
 
 
+@app.command(help='Set users for a group')
+@click.option('--name', '-n', required=True, help='Name of the existing group')
+@click.option('--key-prefix', '-k', required=True, help='Name prefix of service accounts')
+def set_group_users(name, key_prefix):
+    global google, cfg
+
+    # validate the service key folder exists
+    service_key_folder = os.path.join(cfg.service_account_folder, key_prefix)
+    if not os.path.exists(service_key_folder):
+        logger.error(f"The service key folder did not exist at: {service_key_folder}")
+        sys.exit(1)
+
+    # retrieve service key users to share teamdrive access with
+    service_key_users = misc.get_service_account_users(service_key_folder)
+    if service_key_users is None:
+        logger.error(f"Failed to determine the service key user(s) to add to group: {name}")
+        sys.exit(1)
+
+    # retrieve group id
+    success, groups = google.get_groups()
+    if not success:
+        logger.error(f"Unable to retrieve existing groups:\n{groups}")
+        sys.exit(1)
+
+    group_id = misc.get_group_id(groups, name)
+    if not group_id:
+        logger.error(f"Failed to determine group_id of group with name {name!r}")
+        sys.exit(1)
+
+    # retrieve group members
+    success, group_members = google.get_group_users(group_id)
+    if not success:
+        logger.error(f"Failed retrieving users in group with name {name!r}:\n{group_members}")
+        sys.exit(1)
+
+    # remove users that are already a member
+    if 'members' in group_members:
+        for member in group_members['members']:
+            if member['email'] in service_key_users:
+                service_key_users.remove(member['email'])
+
+    if not len(service_key_users):
+        logger.info(f"There were no service key users to add to group with name {name!r}")
+        sys.exit(0)
+
+    # add user to group
+    logger.info(
+        f"Adding {len(service_key_users)} users to {name!r} group, user(s): {service_key_users}")
+
+    for service_key_user in service_key_users:
+        success, resp = google.set_group_user(group_id, service_key_user)
+        if success:
+            logger.info(f"Added user to {name!r} group: {service_key_user}")
+        else:
+            logger.error(f"Failed adding user to {name!r} group for user {service_key_user!r}:\n{resp}")
+            sys.exit(1)
+    sys.exit(0)
+
+
+@app.command(help='Lists users for a group')
+@click.option('--name', '-n', required=True, help='Name of the group')
+def list_group_users(name):
+    global google, cfg
+
+    # retrieve the group id
+    success, groups = google.get_groups()
+    if not success:
+        logger.error(f"Unable to retrieve existing groups:\n{groups}")
+        sys.exit(1)
+
+    group_id = misc.get_group_id(groups, name)
+    if not group_id:
+        logger.error(f"Failed to determine group_id of group with name {name!r}")
+        sys.exit(1)
+
+    # get group members
+    success, group_members = google.get_group_users(group_id)
+    if success:
+        logger.info(f"Existing users on group {name!r}:\n{json.dumps(group_members, indent=2)}")
+        sys.exit(0)
+    else:
+        logger.error(f"Failed retrieving users in group with name {name!r}:\n{group_members}")
+        sys.exit(1)
+
+
 @app.command(help='Retrieve existing service accounts')
 def list_accounts():
     global google, cfg

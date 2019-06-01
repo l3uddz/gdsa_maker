@@ -108,13 +108,27 @@ class Google:
             'name': name,
             'email': f'{name}@{domain}'
         })
-        logger.info(resp.status_code)
         return True if resp.status_code == 200 else False, resp_data
 
     def delete_group(self, group_id):
         success, resp, resp_data = self.query(f'https://www.googleapis.com/admin/directory/v1/groups/{group_id}',
                                               'DELETE')
         return True if resp.status_code == 204 else False, resp_data
+
+    def get_group_users(self, group_id):
+        success, resp, resp_data = self.query(
+            f'https://www.googleapis.com/admin/directory/v1/groups/{group_id}/members', params={
+                'maxResults': 200
+            }, fetch_all_pages=True, page_type='members')
+        return True if resp.status_code == 200 else False, resp_data
+
+    def set_group_user(self, group_id, email):
+        success, resp, resp_data = self.query(
+            f'https://www.googleapis.com/admin/directory/v1/groups/{group_id}/members', 'POST', json={
+                'email': email,
+                'role': 'MEMBER'
+            })
+        return True if resp.status_code == 200 else False, resp_data
 
     def get_service_accounts(self):
         success, resp, resp_data = self.query(f'projects/{self.project_name}/serviceAccounts', fetch_all_pages=True,
