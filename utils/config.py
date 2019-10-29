@@ -39,7 +39,7 @@ class Config(object, metaclass=Singleton):
     base_config = OrderedDict({
         'client_id': '',
         'client_secret': '',
-        'project_name': '',
+        'project_id': '',
         'service_account_folder': os.path.join(os.path.dirname(os.path.realpath(sys.argv[0])), "service_accounts")
     })
 

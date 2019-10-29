@@ -79,7 +79,7 @@ def app(verbose, config_path, log_path, token_path):
     logger.configure(**config_logger)
 
     # Load google
-    google = Google(cfg.client_id, cfg.client_secret, cfg.project_name, token_path)
+    google = Google(cfg.client_id, cfg.client_secret, cfg.project_id, token_path)
 
     # Display params
     logger.info("%s = %r" % ("LOG_PATH".ljust(12), log_path))
