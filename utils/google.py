@@ -142,7 +142,10 @@ class Google:
 
     def create_service_account(self, name):
         success, resp, resp_data = self.query(f'projects/{self.project_id}/serviceAccounts', 'POST', json={
-            'accountId': f'{name}'
+            'accountId': f'{name}',
+            "serviceAccount": {
+                "displayName": f'{name}'
+            }
         })
         return success, resp_data
 
