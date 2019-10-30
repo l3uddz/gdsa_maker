@@ -299,7 +299,7 @@ def create_accounts(name, amount=1):
         sys.exit(1)
 
     for account_number in range(starting_account_number, starting_account_number + amount):
-        account_name = f'{name}{account_number:06d}'
+        account_name = f'{name}-{account_number:03d}'
 
         # create the service account
         success, service_account = google.create_service_account(account_name)
@@ -311,7 +311,7 @@ def create_accounts(name, amount=1):
             # create key for new service account
             success, service_key = google.create_service_account_key(account_email)
             if success and (isinstance(service_key, dict) and 'privateKeyData' in service_key):
-                service_key_path = os.path.join(service_key_folder, f'{account_number}.json')
+                service_key_path = os.path.join(service_key_folder, f'{name}_{account_number:03d}.json')
                 if misc.dump_service_file(service_key_path, service_key):
                     logger.info(f"Created service key for account {account_email!r}: {service_key_path}")
                 else:
