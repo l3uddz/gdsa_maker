@@ -154,6 +154,10 @@ class Google:
                                               })
         return success, resp_data
 
+    def delete_service_account(self, email):
+        success, resp, resp_data = self.query(f'projects/{self.project_id}/serviceAccounts/{email}', 'DELETE')
+        return True if resp.status_code == 200 else False, resp_data
+
     def get_teamdrives(self):
         success, resp, resp_data = self.query('https://www.googleapis.com/drive/v3/teamdrives',
                                               params={'pageSize': 100}, fetch_all_pages=True, page_type='teamDrives')

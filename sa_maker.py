@@ -324,6 +324,50 @@ def create_accounts(name, amount=1):
             sys.exit(1)
 
 
+@app.command(help='Remove service accounts')
+@click.option('--name', '-n', required=True, help='Name prefix for service accounts')
+def remove_accounts(name):
+    global google, cfg
+
+    service_key_folder = os.path.join(cfg.service_account_folder, name)
+
+    # remove service accounts files
+    if os.path.exists(service_key_folder):
+        logger.debug(f"Removing service key files from path: {service_key_folder!r}")
+        for file in os.scandir(service_key_folder):
+            if file.name.endswith(".json"):
+                os.unlink(file.path)
+        logger.info(f"Removed server key files from path: {service_key_folder!r}")
+
+    # retrieve service accounts
+    emails = []
+    logger.debug("Retrieving existing service accounts...")
+    success, service_accounts = google.get_service_accounts()
+    if success:
+        logger.debug("Retrieved existing service accounts.")
+        for account in service_accounts['accounts']:
+            if account['email'].startswith(name):
+                emails.append(account['email'])
+        if len(emails) == 0:
+            logger.info(f"No service account emails matched.")
+            sys.exit(0)
+    else:
+        logger.error(f"Failed to retrieve service accounts:\n{service_accounts}")
+        sys.exit(1)
+
+    # remove service accounts
+    for email in emails:
+        logger.debug(f"Removing service account: {email}")
+        success, resp = google.delete_service_account(email)
+        if not success:
+            logger.error(f"Failed removing service account: {email}")
+            logger.error(f"Unexpected response when removing service account: {email!r}:\n{resp}")
+            sys.exit(1)
+        else:
+            logger.info(f"Removed service account: {email}")
+    sys.exit(0)
+
+
 @app.command(help='Retrieve existing teamdrives')
 def list_teamdrives():
     global google, cfg
