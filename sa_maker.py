@@ -2,6 +2,7 @@
 import json
 import os
 import sys
+import shutil
 from copy import copy
 
 import click
@@ -333,11 +334,12 @@ def remove_accounts(name):
 
     # remove service accounts files
     if os.path.exists(service_key_folder):
-        logger.debug(f"Removing service key files from path: {service_key_folder!r}")
-        for file in os.scandir(service_key_folder):
-            if file.name.endswith(".json"):
-                os.unlink(file.path)
-        logger.info(f"Removed server key files from path: {service_key_folder!r}")
+        logger.debug(f"Removing service key folder: {service_key_folder!r}")
+        try:
+            shutil.rmtree(service_key_folder)
+            logger.info(f"Removed server key folder: {service_key_folder!r}")
+        except OSError as e:
+            print("Error: %s - %s." % (e.filename, e.strerror))
 
     # retrieve service accounts
     emails = []
