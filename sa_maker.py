@@ -264,7 +264,7 @@ def list_group_users(name):
 
 
 @app.command(help='List existing service accounts')
-def list_accounts():
+def list_service_accounts():
     global google, cfg
 
     # retrieve service accounts
