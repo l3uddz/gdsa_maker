@@ -237,7 +237,7 @@ def set_group_users(name, key_prefix):
     sys.exit(0)
 
 
-@app.command(help='Lists users for a group')
+@app.command(help='List users for a group')
 @click.option('--name', '-n', required=True, help='Name of the group')
 def list_group_users(name):
     global google, cfg
@@ -263,7 +263,7 @@ def list_group_users(name):
         sys.exit(1)
 
 
-@app.command(help='Retrieve existing service accounts')
+@app.command(help='List existing service accounts')
 def list_accounts():
     global google, cfg
 
@@ -370,7 +370,7 @@ def remove_accounts(name):
     sys.exit(0)
 
 
-@app.command(help='Retrieve existing teamdrives')
+@app.command(help='List existing teamdrives')
 def list_teamdrives():
     global google, cfg
 
@@ -440,7 +440,7 @@ def set_teamdrive_users(name, key_prefix):
     sys.exit(0)
 
 
-@app.command(help='Lists users for a teamdrive')
+@app.command(help='List users for a teamdrive')
 @click.option('--name', '-n', required=True, help='Name of the teamdrive')
 def list_teamdrive_users(name):
     global google, cfg
