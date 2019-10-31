@@ -454,6 +454,33 @@ def set_teamdrive_users(name, key_prefix):
             sys.exit(1)
     sys.exit(0)
 
+@app.command(help='Set group for a teamdrive')
+@click.option('--name', '-n', required=True, help='Name of the existing teamdrive')
+@click.option('--group', '-g', required=True, help='Name of the group')
+@click.option('--domain', '-d', required=True, help='Domain of the G Suite account')
+def set_teamdrive_group(name, group, domain):
+    global google, cfg
+
+    # retrieve teamdrive id
+    success, teamdrives = google.get_teamdrives()
+    if not success:
+        logger.error(f"Unable to retrieve existing teamdrives:\n{teamdrives}")
+        sys.exit(1)
+
+    teamdrive_id = misc.get_teamdrive_id(teamdrives, name)
+    if not teamdrive_id:
+        logger.error(f"Failed to determine teamdrive_id of teamdrive with name {name!r}")
+        sys.exit(1)
+
+    # share access to teamdrive
+    group_email = name + '@' + domain
+    success, resp = google.set_teamdrive_share_user(teamdrive_id, group_email)
+    if success:
+        logger.info(f"Shared access to {name!r} teamdrive for group: {group}")
+    else:
+        logger.error(f"Failed sharing access to {name!r} teamdrive for group {group!r}:\n{resp}")
+        sys.exit(1)
+    sys.exit(0)
 
 @app.command(help='List users for a teamdrive')
 @click.option('--name', '-n', required=True, help='Name of the teamdrive')
