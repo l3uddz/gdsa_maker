@@ -96,6 +96,14 @@ class Google:
     # GOOGLE METHODS
     ############################################################
 
+    def get_user_accounts(self):
+        success, resp, resp_data = self.query(f'https://www.googleapis.com/admin/directory/v1/users', params={
+            'customer': 'my_customer',
+            'maxResults': 200,
+            'viewType': 'admin_view',
+        }, fetch_all_pages=True)
+        return True if resp.status_code == 200 else False, resp_data
+
     def get_groups(self):
         success, resp, resp_data = self.query(f'https://www.googleapis.com/admin/directory/v1/groups', params={
             'customer': 'my_customer',

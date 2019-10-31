@@ -117,7 +117,22 @@ def authorize():
     sys.exit(0)
 
 
-@app.command(help='Retrieve existing groups')
+@app.command(help='List user accounts')
+def list_user_accounts():
+    global google, cfg
+
+    # retrieve admin accounts
+    logger.info("Retrieving user accounts...")
+    success, accounts = google.get_user_accounts()
+    if success:
+        logger.info(f"User accounts:\n{json.dumps(accounts, indent=2)}")
+        sys.exit(0)
+    else:
+        logger.error(f"Failed to user accounts:\n{accounts}")
+        sys.exit(1)
+
+
+@app.command(help='List existing groups')
 def list_groups():
     global google, cfg
 
