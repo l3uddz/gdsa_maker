@@ -296,7 +296,7 @@ def list_service_accounts():
 @app.command(help='Create service accounts')
 @click.option('--name', '-n', required=True, help='Name prefix for service accounts')
 @click.option('--amount', '-a', default=1, required=False, help='Amount of service accounts to create')
-def create_accounts(name, amount=1):
+def create_service_accounts(name, amount=1):
     global google, cfg
 
     service_key_folder = os.path.join(cfg.service_account_folder, name)
@@ -342,7 +342,7 @@ def create_accounts(name, amount=1):
 
 @app.command(help='Remove service accounts')
 @click.option('--name', '-n', required=True, help='Name prefix for service accounts')
-def remove_accounts(name):
+def remove_service_accounts(name):
     global google, cfg
 
     service_key_folder = os.path.join(cfg.service_account_folder, name)
