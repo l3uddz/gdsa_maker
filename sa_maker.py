@@ -299,6 +299,9 @@ def list_service_accounts():
 def create_service_accounts(name, amount=1):
     global google, cfg
 
+    # convert name to lowercase
+    name = name.lower()
+
     service_key_folder = os.path.join(cfg.service_account_folder, name)
 
     # does service key subfolder exist?
