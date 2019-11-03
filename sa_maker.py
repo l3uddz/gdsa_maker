@@ -94,18 +94,25 @@ def app(verbose, config_path, log_path, token_path):
 ############################################################
 
 @app.command(help='Authorize Google Account')
-def authorize():
+@click.option('--auth-code', '-c', default=None, required=False, help='Authorization Code', )
+@click.option('--link-only', '-l', required=False, is_flag=True, help='Authorization Link only to stdout')
+def authorize(auth_code=None, link_only=False):
     global google, cfg
+
+    if link_only:
+        print(google.get_auth_link())
+        sys.exit(0)
 
     logger.debug(f"client_id: {cfg.client_id!r}")
     logger.debug(f"client_secret: {cfg.client_secret!r}")
 
     # Provide authorization link
-    logger.info("Visit the link below and paste the authorization code")
-    logger.info(google.get_auth_link())
-    logger.info("Enter authorization code: ")
-    auth_code = input()
-    logger.debug(f"auth_code: {auth_code!r}")
+    if not auth_code:
+        logger.info("Visit the link below and paste the authorization code")
+        logger.info(google.get_auth_link())
+        logger.info("Enter authorization code: ")
+        auth_code = input()
+        logger.debug(f"auth_code: {auth_code!r}")
 
     # Exchange authorization code
     token = google.exchange_code(auth_code)
