@@ -8,7 +8,7 @@ colorama==0.4.1
 idna==2.8
 loguru==0.2.5
 oauthlib==3.0.1
-Pygments==2.3.1
+Pygments==2.7.4
 requests==2.21.0
 requests-oauthlib==1.2.0
 six==1.12.0
